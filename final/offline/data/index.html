@@ -1,0 +1,564 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flood Monitoring System</title>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <style>
+    /* CSS Variables for Light and Dark Mode */
+    :root {
+      --bg-color: #e0f7fa;
+      --text-color: #333;
+      --primary-color: #00796b;
+      --warning-color: #ffb300;
+      --alert-color: #d32f2f;
+    }
+    [data-theme='dark'] {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --primary-color: #1de9b6;
+      --warning-color: #ffeb3b;
+      --alert-color: #ff5252;
+    }
+    
+    /* General Body and Text Styling */
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Arial', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 20px;
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+
+    h2 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    /* Human figure visualization */
+    .charts-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    
+    .human-chart {
+      width: 150px;
+      height: 300px;
+      margin-right: 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      border: 2px solid var(--primary-color);
+      border-radius: 5px;
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .water-level {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%; /* Initial height, will be updated via JS */
+      background-color: rgba(33, 150, 243, 0.7); /* Water blue color with opacity */
+      transition: height 0.5s ease;
+      z-index: 1;
+      border-top: 2px solid #1565C0;
+    }
+    
+    .measurement-marks {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+    
+    .mark {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-color);
+    }
+    
+    .mark::before, .mark::after {
+      content: '';
+      height: 1px;
+      width: 5px;
+      background-color: var(--text-color);
+    }
+
+    /* LED Styles */
+    .container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .led {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin: 10px;
+      background-color: grey;
+      color: white;
+      font-size: 1.5rem;
+      transition: background-color 0.5s ease, transform 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .led.green { background-color: #4caf50; }
+    .led.yellow { background-color: #ffeb3b; }
+    .led.red { background-color: #f44336; }
+
+    /* Flood Safety Tips and Login Form Styling */
+    .tip-section, .login-form {
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.5s ease;
+    }
+    [data-theme='dark'] .tip-section,
+    [data-theme='dark'] .login-form {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .tip-section h3, .login-form h3 {
+      font-size: 1.8rem;
+      color: var(--primary-color);
+    }
+    .tip-section p {
+      color: black;
+    }
+    [data-theme='dark'] .tip-section p,
+    [data-theme='dark'] .login-form p {
+      color: #e0e0e0;
+    }
+
+    /* Admin Login Form Styling */
+    .login-form {
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.5s ease;
+    }
+
+    .login-form h3 {
+      font-size: 1.8rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 12px 15px;
+      font-size: 1.1rem;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+      background-color: #fff;
+      transition: border-color 0.3s ease;
+    }
+
+    .login-input:focus {
+      border-color: var(--primary-color);
+      outline: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.2rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .login-btn:hover {
+      background-color: var(--warning-color);
+    }
+
+    /* Theme Toggle Button */
+    .theme-toggle {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 1.2rem;
+    }
+    .theme-toggle:hover {
+      background-color: var(--warning-color);
+    }
+
+   /* Popup Alert Styling */
+.alert-popup {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 15px;
+  background-color: rgba(255, 69, 58, 0.9); /* Red background for alerts */
+  color: white;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.alert-popup.show {
+  display: block;
+  opacity: 1;
+}
+
+    /* Mobile Responsiveness */
+    @media (max-width: 600px) {
+      h2 { font-size: 2rem; }
+      .charts-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .human-chart {
+        margin-right: 0;
+        margin-bottom: 20px;
+      }
+      .led {
+        width: 100px;
+        height: 100px;
+        font-size: 1rem;
+      }
+      .tip-section h3, .login-form h3 {
+        font-size: 1.5rem;
+      }
+      .login-form input, .login-form button {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Flood Monitoring System</h2>
+  </header>
+  <main>
+    <!-- Charts Container -->
+    <div class="charts-container">
+      <!-- Human Figure Chart -->
+      <div class="human-chart" role="img" aria-label="Water level visualization with human figure">
+        <div class="water-level" id="water-level"></div>
+        <div class="measurement-marks">
+          <div class="mark">6ft</div>
+          <div class="mark">5ft</div>
+          <div class="mark">4ft</div>
+          <div class="mark">3ft</div>
+          <div class="mark">2ft</div>
+          <div class="mark">1ft</div>
+          <div class="mark">0ft</div>
+        </div>
+      </div>
+      
+      <!-- Distance Monitoring Chart -->
+      <div id="chart-distance" style="flex: 1;" role="region" aria-labelledby="chart-title">
+        <h3 id="chart-title" hidden>Flood Level Monitoring Chart</h3>
+      </div>
+    </div>
+
+    <!-- Current Water Level Display -->
+    <div id="water-level-display" style="font-size: 1.2rem; margin-bottom: 15px;">
+      Current Water Level: <span id="current-water-level">0.00 ft</span>
+    </div>
+
+    <!-- LED Indicators for Status -->
+    <div class="container">
+      <div id="led-green" class="led green" role="status" aria-live="polite">Safe</div>
+      <div id="led-yellow" class="led">Warning</div>
+      <div id="led-red" class="led">Danger</div>
+    </div>
+
+    <!-- Flood Safety Tips Section -->
+    <section class="tip-section">
+      <h3>Flood Safety Tips</h3>
+      <p>Stay informed about the weather conditions. Have an emergency kit ready.</p>
+      <p>Know your evacuation routes and have a plan in place.</p>
+    </section>
+
+    <!-- Admin Login Form -->
+    <div class="login-form">
+      <h3>Admin Login</h3>
+      <form action="admin.html" method="get">
+        <div class="form-group">
+          <input type="text" name="username" placeholder="Username" required class="login-input">
+        </div>
+        <div class="form-group">
+          <input type="password" name="password" placeholder="Password" required class="login-input">
+        </div>
+        <div class="form-group">
+          <button type="submit" class="login-btn">Login</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Alert Popup -->
+    <div class="alert-popup" id="alert-popup">Dangerous Flooding Detected!</div>
+
+    <!-- Theme Toggle Button -->
+    <footer>
+      <button class="theme-toggle" id="theme-toggle">Switch to Dark Mode</button>
+    </footer>      
+  </main>
+
+<script>    
+// Automatic Theme Detection and Toggle
+const themeToggle = document.getElementById('theme-toggle');
+let darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+themeToggle.innerText = darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+
+// Listener for theme preference changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+  darkMode = event.matches;
+  document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  themeToggle.innerText = darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+});
+
+// Toggle theme manually when button is clicked
+themeToggle.addEventListener('click', () => {
+  darkMode = !darkMode;
+  document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  themeToggle.innerText = darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+});
+
+// Highcharts Configuration for Distance Monitoring with cm, inches, and feet
+var chartT = new Highcharts.Chart({
+  chart: { renderTo: 'chart-distance' },
+  title: { text: 'Distance Monitoring' },
+  series: [
+    { name: 'Distance (cm)', yAxis: 0, data: [], color: '#33cc33' },
+    { name: 'Distance (Inches)', yAxis: 1, data: [], color: '#059e8a' },
+    { name: 'Distance (Feet)', yAxis: 2, data: [], color: '#7cb5ec' }
+  ],
+  plotOptions: {
+    line: { 
+      animation: false,
+      dataLabels: { 
+        enabled: true,
+        format: '{point.y:.2f}' // Format to exactly 2 decimal places
+      }
+    }
+  },
+  xAxis: { type: 'datetime', dateTimeLabelFormats: { second: '%H:%M:%S' } },
+  yAxis: [
+    { // Primary axis (cm)
+      title: { text: 'Distance (cm)', style: { color: '#33cc33' } },
+      gridLineColor: '#f0f0f0',
+      labels: { format: '{value:.2f}', style: { color: '#33cc33' } }
+    },
+    { // Secondary axis (Inches)
+      title: { text: 'Distance (Inches)', style: { color: '#059e8a' } },
+      opposite: true,
+      gridLineColor: '#f0f0f0',
+      labels: { format: '{value:.2f}', style: { color: '#059e8a' } }
+    }, 
+    { // Tertiary axis (Feet)
+      title: { text: 'Distance (Feet)', style: { color: '#7cb5ec' } },
+      opposite: true,
+      gridLineColor: '#f0f0f0',
+      labels: { format: '{value:.2f}', style: { color: '#7cb5ec' } }
+    }
+  ],
+  legend: { enabled: true },
+  credits: { enabled: false }
+});
+
+// Function to update LED indicators
+function updateLEDs(waterLevelFeet) {
+  // Reset all LEDs to default state (remove active class)
+  document.getElementById('led-green').className = 'led';
+  document.getElementById('led-yellow').className = 'led';
+  document.getElementById('led-red').className = 'led';
+  
+  // Set the active LED based on water level in feet
+  if (waterLevelFeet < 2.0) {
+    document.getElementById('led-green').className = 'led green';
+    return 'green';
+  } else if (waterLevelFeet < 4.0) {
+    document.getElementById('led-yellow').className = 'led yellow';
+    return 'yellow';
+  } else {
+    document.getElementById('led-red').className = 'led red';
+    return 'red';
+  }
+}
+
+// Function to update the water level visualization
+function updateWaterLevelVisual(waterLevelFeet) {
+  const visualElement = document.getElementById('water-level');
+  const waterLevelDisplay = document.getElementById('current-water-level');
+  
+  if (!visualElement) return;
+
+  // Max height is 6ft, convert to percentage of the container
+  const maxHeight = 6.0;
+  // Ensure water level is between 0 and max height
+  const clampedLevel = Math.max(0, Math.min(maxHeight, waterLevelFeet));
+  const fillPercentage = (clampedLevel / maxHeight) * 100;
+
+  // Update the water level visual height
+  visualElement.style.height = `${fillPercentage}%`;
+
+  // Update the water level text display
+  if (waterLevelDisplay) {
+    waterLevelDisplay.textContent = `${waterLevelFeet.toFixed(2)} ft`;
+  }
+
+  // Color code based on water level
+  if (waterLevelFeet >= 4.0) {
+    visualElement.style.backgroundColor = 'rgba(244, 67, 54, 0.7)'; // Red - Danger
+  } else if (waterLevelFeet >= 2.0) {
+    visualElement.style.backgroundColor = 'rgba(255, 235, 59, 0.7)'; // Yellow - Warning
+  } else {
+    visualElement.style.backgroundColor = 'rgba(76, 175, 80, 0.7)'; // Green - Safe
+  }
+}
+
+// Function to show alert popup for dangerous conditions
+function showAlertIfNeeded(waterLevelFeet, ledStatus) {
+  const alertPopup = document.getElementById('alert-popup');
+  
+  if (!alertPopup) return; // Safety check
+  
+  if (ledStatus === 'red') {
+    const message = `Dangerous Flooding! Water level at ${waterLevelFeet.toFixed(2)} ft`;
+    alertPopup.textContent = message;
+    alertPopup.classList.add('show');
+    
+    // Hide the alert after 10 seconds
+    setTimeout(() => {
+      alertPopup.classList.remove('show');
+    }, 10000);
+  }
+}
+
+// Function to calculate feet using custom formula
+function calculateCustomFeet(distanceCm) {
+  // Custom formula: feet = (-5/25) * cm + 6
+  // Where 30 cm → 0 feet and 5 cm → 5 feet
+  return parseFloat(((-5/25) * distanceCm + 6).toFixed(2));
+}
+
+// Simulate data for testing (if needed)
+let testMode = false; // Set to false when connecting to actual ESP32 sensor
+let testWaterLevel = 0;
+let testDirection = 0.1;
+
+// Data fetching function that uses the cm readings from the sensor
+function updateData() {
+  if (testMode) {
+    // For testing - simulate fluctuating water levels
+    testWaterLevel += testDirection;
+    if (testWaterLevel > 5.5) testDirection = -0.1;
+    if (testWaterLevel < 0.5) testDirection = 0.1;
+    
+    const x = (new Date()).getTime();
+    const distanceCm = parseFloat((150 - testWaterLevel * 25).toFixed(2)); // Simulate cm readings
+    const distanceInches = parseFloat((distanceCm * 0.393701).toFixed(2));
+    const waterLevelFeet = testWaterLevel;
+    
+    // Update chart
+    chartT.series[0].addPoint([x, distanceCm], false, chartT.series[0].data.length > 40);
+    chartT.series[1].addPoint([x, distanceInches], false, chartT.series[1].data.length > 40);
+    chartT.series[2].addPoint([x, waterLevelFeet], true, chartT.series[2].data.length > 40);
+    
+    // Update visual elements
+    updateWaterLevelVisual(waterLevelFeet);
+    const ledStatus = updateLEDs(waterLevelFeet);
+    
+    // Show alert for dangerous conditions
+    showAlertIfNeeded(waterLevelFeet, ledStatus);
+    
+    return;
+  }
+
+  fetch("/distance")
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      if (!data.status) {
+        console.log("Sensor is off");
+        return;
+      }
+      
+      const x = (new Date()).getTime();
+      
+      // Get the distance in cm directly from the sensor
+      const distanceCm = parseFloat(data.distance) || 0;
+      
+      // Ignore if distance is 0 (likely an error)
+      if (distanceCm === 0) return;
+
+      // Convert cm to inches
+      const distanceInches = parseFloat((distanceCm * 0.393701).toFixed(2));
+      
+      // Calculate feet using custom formula
+      const waterLevelFeet = calculateCustomFeet(distanceCm);
+      
+      // Add all measurements to charts
+      chartT.series[0].addPoint([x, distanceCm], false, chartT.series[0].data.length > 40);
+      chartT.series[1].addPoint([x, distanceInches], false, chartT.series[1].data.length > 40);
+      chartT.series[2].addPoint([x, waterLevelFeet], true, chartT.series[2].data.length > 40);
+      
+      // Update water level visualization
+      updateWaterLevelVisual(waterLevelFeet);
+      
+      // Update LED indicators based on water level
+      const ledStatus = updateLEDs(waterLevelFeet);
+      
+      // Show alert for dangerous conditions
+      showAlertIfNeeded(waterLevelFeet, ledStatus);
+    })
+    .catch(error => {
+      console.error("Request failed: " + error);
+    });
+}
+
+// Update data every 3 seconds
+setInterval(updateData, 3000);
+
+// Initialize with first update immediately
+updateData();
+</script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flood Monitoring System - Admin Dashboard</title>
+  <style>
+    /* CSS Variables for Light and Dark Mode */
+    :root {
+      --bg-color: #e0f7fa;
+      --text-color: #333;
+      --primary-color: #00796b;
+      --table-bg-color: #ffffff;
+      --table-border-color: #ccc;
+    }
+
+    [data-theme='dark'] {
+      --bg-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --primary-color: #1de9b6;
+      --table-bg-color: #2c2c2c;
+      --table-border-color: #444;
+    }
+
+    /* General Body and Text Styling */
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    h2, h3 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .control-panel {
+      font-size: 1.5em;
+      margin: 20px 0;
+      color: var(--primary-color);
+    }
+
+    button, input[type="button"], input[type="submit"] {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      margin: 10px 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover, input[type="button"]:hover, input[type="submit"]:hover {
+      background-color: #ffeb3b;
+    }
+
+    select, input[type="date"] {
+      margin: 10px 5px;
+      padding: 10px;
+      border: 1px solid var(--table-border-color);
+      border-radius: 4px;
+      width: 100%;
+      max-width: 150px;
+      background-color: var(--table-bg-color);
+      color: var(--text-color);
+    }
+
+    .date-range-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-label {
+      font-weight: bold;
+      margin: 0 5px;
+    }
+
+    /* Table Styling */
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 900px;
+      background-color: var(--table-bg-color);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      border: 1px solid var(--table-border-color);
+      padding: 12px;
+      text-align: center;
+      color: var(--text-color);
+    }
+
+    th {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    #sensor-status {
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
+    .form-container {
+      margin: 20px auto;
+      padding: 15px;
+      border: 1px solid var(--table-border-color);
+      border-radius: 5px;
+      background-color: var(--table-bg-color);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .control-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 15px 0;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      width: 100%;
+      max-width: 900px;
+    }
+    
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    
+    .sleep-btn-active {
+      background-color: #f44336 !important;
+    }
+    
+    .sleep-btn-inactive {
+      background-color: var(--primary-color) !important;
+    }
+
+    .warning-text {
+      color: #ff5722;
+      font-weight: bold;
+    }
+
+    .success-text {
+      color: #4caf50;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .control-panel {
+        font-size: 1.2em;
+      }
+      table {
+        font-size: 0.9em;
+      }
+      select, input[type="date"] {
+        max-width: 100%;
+      }
+      .date-inputs {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>Flood Monitoring System - Admin Dashboard</h2>
+  <p>Welcome, Admin!</p>
+  <button class="logout-button" onclick="logout()">Logout</button>
+
+  <div class="form-container">
+    <div class="control-panel">Control Panel</div>
+    
+    <div class="grid-container">
+      <div class="control-section">
+        <h4>Control Sensor</h4>
+        <button id="toggle-sensor" onclick="toggleSensor()">Toggle Sensor</button>
+        <p id="sensor-status">Sensor is currently: <span id="status-text">Loading...</span></p>
+      </div>
+
+      <div class="control-section">
+        <h4>Manage Recorded Data</h4>
+        <form id="filter-form">
+          <div class="date-range-container">
+            <div class="date-inputs">
+              <span class="date-label">From:</span>
+              <input type="date" id="start-date">
+              <span class="date-label">To:</span>
+              <input type="date" id="end-date">
+            </div>
+            <div>
+              <input type="button" value="Filter by Date" onclick="filterRecords()">
+              <input type="button" value="Show All" onclick="showAllRecords()">
+              <input type="button" value="Clear Filter" onclick="clearFilter()">
+            </div>
+            <div>
+              <input type="button" value="Delete Selected" onclick="confirmDeleteSelected()">
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="control-section">
+        <h4>DFPlayer Control</h4>
+        <button id="toggleSleep">Loading DFPlayer status...</button>
+        <div class="status" id="statusDiv">
+          DFPlayer Status: Loading...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Recorded Data</h3>
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Distance (CM)</th>
+        <th>Water Depth (FT)</th>
+        <th>Select</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data will be inserted here -->
+    </tbody>
+  </table>
+
+  <button class="theme-toggle" id="theme-toggle">Switch to Dark Mode</button>
+
+  <script>
+    let recordedData = [];
+    let sensorEnabled = false;
+    let lastRecordTime = 0; // Track last record time to enforce 1-minute gap
+
+    // Custom formula: feet = (-5/25) * cm + 6
+    // where 30 cm → 0 feet and 5 cm → 5 feet
+    function calculateWaterDepth(distanceCm) {
+      const waterDepthFeet = (-5/25) * distanceCm + 6;
+      return Math.round(waterDepthFeet * 100) / 100; // Round to 2 decimal places
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize theme based on user preference
+      const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDarkScheme) {
+        document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('theme-toggle').innerText = 'Switch to Light Mode';
+      }
+
+      // Set default date range (last 7 days to today)
+      const today = new Date();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      
+      document.getElementById('end-date').value = today.toISOString().split('T')[0];
+      document.getElementById('start-date').value = weekAgo.toISOString().split('T')[0];
+
+      // Fetch initial sensor state
+      fetchSensorStatus();
+      
+      // Fetch initial DFPlayer sleep status
+      fetchSleepStatus();
+      
+      // Add click event listener to the toggleSleep button
+      document.getElementById('toggleSleep').addEventListener('click', toggleSleep);
+
+      // Poll for latest data every 5 seconds if sensor is ON
+      setInterval(fetchLatestData, 5000);
+    });
+
+    // Fetch sensor status from the ESP32
+    async function fetchSensorStatus() {
+      try {
+        const response = await fetch('/sensor_status');
+        const data = await response.json();
+        sensorEnabled = data.status;
+        document.getElementById('status-text').innerText = sensorEnabled ? "ON" : "OFF";
+      } catch (error) {
+        console.error('Error fetching sensor status:', error);
+        document.getElementById('status-text').innerText = "ERROR";
+      }
+    }
+
+    function toggleSensor() {
+      fetch('/toggle_sensor')
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to toggle sensor');
+          return response.text();
+        })
+        .then(status => {
+          fetchSensorStatus(); // Fetch the updated status instead of toggling locally
+        })
+        .catch(error => alert(error));
+    }
+
+    function addRow(record) {
+      const table = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+      const newRow = table.insertRow();
+      newRow.insertCell(0).innerText = record.timestamp;
+      newRow.insertCell(1).innerText = record.distance;
+      
+      // Display water depth or N/A if negative
+      const waterDepthCell = newRow.insertCell(2);
+      if (record.waterDepth >= 0) {
+        waterDepthCell.innerText = record.waterDepth.toFixed(2);
+        waterDepthCell.className = 'success-text';
+      } else {
+        waterDepthCell.innerText = 'N/A (No flood)';
+        waterDepthCell.className = 'warning-text';
+      }
+      
+      newRow.insertCell(3).innerHTML = '<input type="checkbox" class="delete-checkbox">';
+    }
+
+    // Function to fetch the latest data from the server
+    async function fetchLatestData() {
+      if (!sensorEnabled) return; // Don't fetch if sensor is off
+      
+      try {
+        const response = await fetch('/distance');
+        if (!response.ok) {
+          throw new Error('Failed to fetch distance data');
+        }
+        
+        const data = await response.json();
+        
+        if (data.status) {
+          const currentTime = Date.now();
+          const waterDepth = calculateWaterDepth(data.distance);
+          
+          // Check if enough time has passed since last record (1 minute = 60000 ms)
+          if (currentTime - lastRecordTime >= 60000) {
+            // Only record if water depth is positive (indicating flood)
+            if (waterDepth >= 0) {
+              const record = {
+                timestamp: new Date().toLocaleString(),
+                distance: data.distance,
+                waterDepth: waterDepth
+              };
+              
+              // Add to our recordedData array
+              recordedData.push(record);
+              
+              // Add a new row to the table
+              addRow(record);
+              
+              // Update last record time
+              lastRecordTime = currentTime;
+              
+              console.log(`New flood reading recorded: ${waterDepth.toFixed(2)} feet (${data.distance} cm)`);
+            } else {
+              console.log(`No flood detected: Water depth would be ${waterDepth.toFixed(2)} feet (${data.distance} cm) - not recording`);
+              // Still update the last record time to maintain the 1-minute gap
+              lastRecordTime = currentTime;
+            }
+          } else {
+            const timeRemaining = Math.ceil((60000 - (currentTime - lastRecordTime)) / 1000);
+            console.log(`Waiting ${timeRemaining} seconds before next potential record`);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest data:', error);
+      }
+    }
+
+    function filterRecords() {
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+      
+      if (!startDate || !endDate) {
+        alert('Please select both start and end dates.');
+        return;
+      }
+      
+      if (new Date(startDate) > new Date(endDate)) {
+        alert('Start date cannot be later than end date.');
+        return;
+      }
+      
+      const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+      tableBody.innerHTML = ''; 
+
+      const filteredData = recordedData.filter(record => {
+        const recordDate = new Date(record.timestamp);
+        const filterStartDate = new Date(startDate);
+        const filterEndDate = new Date(endDate);
+        
+        // Set time to beginning of day for start date and end of day for end date
+        filterStartDate.setHours(0, 0, 0, 0);
+        filterEndDate.setHours(23, 59, 59, 999);
+        
+        return recordDate >= filterStartDate && recordDate <= filterEndDate;
+      });
+
+      if (filteredData.length === 0) {
+        const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+        const noDataRow = tableBody.insertRow();
+        const noDataCell = noDataRow.insertCell(0);
+        noDataCell.colSpan = 4;
+        noDataCell.innerText = 'No records found for the selected date range.';
+        noDataCell.style.fontStyle = 'italic';
+        noDataCell.style.color = 'var(--text-color)';
+      } else {
+        filteredData.forEach(record => addRow(record));
+      }
+    }
+
+    function showAllRecords() {
+      const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+      tableBody.innerHTML = '';
+      recordedData.forEach(record => addRow(record));
+    }
+
+    function clearFilter() {
+      document.getElementById('start-date').value = '';
+      document.getElementById('end-date').value = '';
+      showAllRecords();
+    }
+
+    function confirmDeleteSelected() {
+      const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
+      if (checkboxes.length === 0) {
+        alert('No records selected for deletion.');
+        return;
+      }
+      const confirmed = confirm(`Are you sure you want to delete ${checkboxes.length} selected record(s)?`);
+      if (confirmed) {
+        checkboxes.forEach(checkbox => {
+          const row = checkbox.closest('tr');
+          // Find the index in recordedData and remove it
+          const timestamp = row.cells[0].innerText;
+          const distance = parseFloat(row.cells[1].innerText);
+          const index = recordedData.findIndex(record => 
+            record.timestamp === timestamp && record.distance === distance
+          );
+          if (index !== -1) {
+            recordedData.splice(index, 1);
+          }
+          row.parentNode.removeChild(row);
+        });
+        alert('Selected records deleted.');
+      }
+    }
+
+    function logout() {
+      window.location.href = '/'; // Redirect to homepage or login page
+    }
+
+    // Theme toggle functionality
+    document.getElementById('theme-toggle').onclick = function() {
+      const currentTheme = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', currentTheme === 'dark' ? '' : 'dark');
+      this.innerText = currentTheme === 'dark' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+    };
+    
+    // DFPlayer functions
+    function updateSleepUI(isSleeping) {
+      const toggleBtn = document.getElementById('toggleSleep');
+      const statusDiv = document.getElementById('statusDiv');
+      
+      toggleBtn.textContent = isSleeping ? 'Wake DFPlayer' : 'Sleep DFPlayer';
+      toggleBtn.className = isSleeping ? 'sleep-btn-active' : 'sleep-btn-inactive';
+      statusDiv.innerHTML = `DFPlayer Status: ${isSleeping ? 'Sleeping' : 'Awake'}`;
+    }
+    
+    async function fetchSleepStatus() {
+      try {
+        const response = await fetch('/sleep_status');
+        if (!response.ok) {
+          throw new Error('Failed to fetch sleep status');
+        }
+        const data = await response.json();
+        updateSleepUI(data.sleeping);
+      } catch (error) {
+        console.error('Error fetching DFPlayer sleep status:', error);
+        document.getElementById('statusDiv').innerHTML = 'DFPlayer Status: Error';
+      }
+    }
+    
+    async function toggleSleep() {
+      try {
+        const response = await fetch('/toggle_sleep');
+        if (!response.ok) {
+          throw new Error('Failed to toggle sleep mode');
+        }
+        await fetchSleepStatus(); // Fetch the updated status
+      } catch (error) {
+        console.error('Error toggling DFPlayer sleep mode:', error);
+        alert('Failed to toggle DFPlayer sleep mode');
+      }
+    }
+  </script>
+</body>
+</html>
